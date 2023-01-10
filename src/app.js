@@ -9,7 +9,10 @@ import 'dayjs/locale/pt-br.js';
 const now = dayjs.locale('pt-br')
 
 const schema = Joi.object({
-    name: Joi.string()
+    name: Joi.string(),
+
+    message: Joi.string()
+    
 });
 
 
@@ -32,18 +35,17 @@ async function getUsers() {
 
 
 app.post("/participants" , async (req, res) => {
-    const user = req.body;
-
+    
     try {
-        const value = await schema.validateAsync({name : user.name});
+        const user = req.body;
         const users = await getUsers();
-
+        await schema.validateAsync({name : user.name});
 
         const userExists = users.find((u) => u.name === user.name);
         if(userExists) {
             return res.sendStatus(409);
         }
-        
+
         user.lastStatus = Date.now();
         await db.collection("participants").insertOne(user);
         res.sendStatus(201);
@@ -51,12 +53,23 @@ app.post("/participants" , async (req, res) => {
     catch (error) {
         res.status(422).send(error);
     }
-
-
-    
 })
 
 
+app.get("/participants" , async (req, res) => {
+    res.send(await getUsers());
+})
+
+setInterval(async () => {
+    const users = await getUsers();
+    const now = Date.now();
+    const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
+    if(inactiveUsers.length > 0) {
+        await db.collection("participants").deleteMany({
+            name: { $in: inactiveUsers.map((u) => u.name) }
+        });
+    }
+}, 15000);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${process.env.PORT}`);
