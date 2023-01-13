@@ -9,9 +9,16 @@ import 'dayjs/locale/pt-br.js';
 const now = dayjs.locale('pt-br')
 
 const schema = Joi.object({
-    name: Joi.string(),
+    name: Joi.string().min(1),
 
-    message: Joi.string()
+    to: Joi.string().min(1),
+    text: Joi.string().min(1),
+    type: Joi.alternatives().conditional('type', {
+        is: 'message',
+        then: Joi.string().valid('message'),
+        otherwise: Joi.string().valid('private_message')
+    }),
+
     
 });
 
@@ -65,21 +72,69 @@ app.post("/participants" , async (req, res) => {
     }
 });
 
+app.post("/messages" , async (req, res) => {
+    try {
+        const message = req.body;
+        const from = req.headers.user;
+
+        if(!message.to || !message.text || !message.type) {
+            return res.sendStatus(422);
+        }
+        if(message.type !== "message" && message.type !== "private_message") {
+            return res.sendStatus(422);
+        }
+
+        let hour = dayjs().format('HH:mm:ss');
+        await db.collection("messages").insertOne({
+            from,
+            to: message.to,
+            text: message.text,
+            type: message.type,
+            time: hour
+        });
+        res.sendStatus(201);
+    } catch (error) {
+        res.status(422).send("deu ruim");
+    }
+});
+
+app.get("/messages" , async (req, res) => {
+    try {
+        const limit = req.query.limit;
+        const user = req.headers.user;
+        const messages = await db.collection("messages").find().toArray();
+        const filteredMessages = messages.filter((m) => {
+            if(m.type === "message") {
+                return true;
+            }
+            if(m.type === "private_message" && (m.from === user || m.to === user)) {
+                return true;
+            }
+            return false;
+        });
+        const sortedMessages = filteredMessages.sort((a, b) => a.time - b.time);
+        const limitedMessages = sortedMessages.slice(0, limit);
+        res.send(limitedMessages);
+    } catch (error) {
+        res.sendStatus(500);
+    }
+});
+
 
 app.get("/participants" , async (req, res) => {
     res.send(await getUsers());
 })
 
-// setInterval(async () => {
-//     const users = await getUsers();
-//     const now = Date.now();
-//     const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
-//     if(inactiveUsers.length > 0) {
-//         await db.collection("participants").deleteMany({
-//             name: { $in: inactiveUsers.map((u) => u.name) }
-//         });
-//     }
-// }, 15000);
+setInterval(async () => {
+    const users = await getUsers();
+    const now = Date.now();
+    const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
+    if(inactiveUsers.length > 0) {
+        await db.collection("participants").deleteMany({
+            name: { $in: inactiveUsers.map((u) => u.name) }
+        });
+    }
+}, 15000);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${process.env.PORT}`);
