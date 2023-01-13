@@ -35,29 +35,27 @@ async function getUsers() {
 
 
 app.post("/participants" , async (req, res) => {
-    
     try {
         const user = req.body;
+        if(!user.name) { //verifica se o campo name está presente no body
+            return res.sendStatus(422);
+        }
         const users = await getUsers();
         await schema.validateAsync({name : user.name});
         if(user.name === "") {
             return res.sendStatus(422);
         }
-        
-
         const userExists = users.find((u) => u.name === user.name);
         if(userExists) {
             return res.sendStatus(409);
         }
-        
         user.lastStatus = Date.now();
         await db.collection("participants").insertOne(user);
         res.sendStatus(201);
-    }
-    catch (error) {
+    } catch (error) {
         res.status(422).send(error);
     }
-})
+});
 
 
 app.get("/participants" , async (req, res) => {
