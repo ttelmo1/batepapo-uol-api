@@ -33,11 +33,10 @@ async function getUsers() {
     return users;
 }
 
-
 app.post("/participants" , async (req, res) => {
     try {
         const user = req.body;
-        if(!user.name) { //verifica se o campo name está presente no body
+        if(!user.name) { 
             return res.sendStatus(422);
         }
         const users = await getUsers();
@@ -50,7 +49,16 @@ app.post("/participants" , async (req, res) => {
             return res.sendStatus(409);
         }
         user.lastStatus = Date.now();
+        let day = dayjs().format('DD/MM/YYYY');
         await db.collection("participants").insertOne(user);
+        await db.collection("messages").insertOne({
+            from: user.name,
+            to: "Todos",
+            text: "entra na sala...",
+            type: "status",
+            time: day
+        });
+
         res.sendStatus(201);
     } catch (error) {
         res.status(422).send(error);
