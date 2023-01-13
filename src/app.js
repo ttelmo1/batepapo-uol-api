@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br.js';
 
 const now = dayjs.locale('pt-br')
+const hour = dayjs().format('HH:mm:ss');
 
 const schema = Joi.object({
     name: Joi.string().min(1),
@@ -56,14 +57,13 @@ app.post("/participants" , async (req, res) => {
             return res.sendStatus(409);
         }
         user.lastStatus = Date.now();
-        let day = dayjs().format('DD/MM/YYYY');
         await db.collection("participants").insertOne(user);
         await db.collection("messages").insertOne({
             from: user.name,
             to: "Todos",
             text: "entra na sala...",
             type: "status",
-            time: day
+            time: hour,
         });
 
         res.sendStatus(201);
@@ -84,13 +84,13 @@ app.post("/messages" , async (req, res) => {
             return res.sendStatus(422);
         }
 
-        let hour = dayjs().format('HH:mm:ss');
+        
         await db.collection("messages").insertOne({
             from,
             to: message.to,
             text: message.text,
             type: message.type,
-            time: hour
+            time: hour,
         });
         res.sendStatus(201);
     } catch (error) {
