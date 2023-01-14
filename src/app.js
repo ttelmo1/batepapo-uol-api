@@ -83,6 +83,8 @@ app.post("/messages" , async (req, res) => {
             return res.sendStatus(422);
         }
         if(!from || !users.find((u) => u.name === from)) {
+            console.log(users.find((u) => u.name === from))
+            console.log("deu ruim1");
             return res.sendStatus(422);
         }
         
@@ -126,53 +128,90 @@ app.post("/messages" , async (req, res) => {
 //     }
 // });
 
+// app.get("/messages", async (req, res) => {
+//     try {
+//         const limit = req.query.limit || 100;
+//         const user = req.headers.User;
+//         const users = await db.collection("participants").find().toArray();
+//         if (!user || !users.find((u) => u.name === user)) {
+//             return res.sendStatus(422);
+//         }
+
+//         const messages = await db
+//             .collection("messages")
+//             .find({
+//                 $or: [
+//                     { type: "message" },
+//                     {
+//                         type: "private_message",
+//                         $or: [{ from: user }, { to: user }]
+//                     }
+//                 ]
+//             })
+//             .sort({ time: -1 })
+//             .skip(0)
+//             .limit(limit)
+//             .toArray();
+
+//         res.send(messages).statusCode(200);
+//     } catch (error) {
+//         res.sendStatus(500);
+//     }
+// });
+
 app.get("/messages", async (req, res) => {
     try {
-        const limit = req.query.limit || 100;
+        const limit = req.query.limit;
         const user = req.headers.User;
-        const users = await db.collection("participants").find().toArray();
-        if (!user || !users.find((u) => u.name === user)) {
+
+        if (!user) {
             return res.sendStatus(422);
         }
 
+        const filter = {
+            $or: [
+                { type: "message" },
+                {
+                    type: "private_message",
+                    $or: [{ from: user }, { to: user }]
+                }
+            ]
+        };
+
         const messages = await db
             .collection("messages")
-            .find({
-                $or: [
-                    { type: "message" },
-                    {
-                        type: "private_message",
-                        $or: [{ from: user }, { to: user }]
-                    }
-                ]
-            })
-            .sort({ time: -1 })
-            .skip(0)
-            .limit(limit)
-            .toArray();
+            .find(filter)
+            .sort({ time: -1 });
+        if (limit) {
+            messages.limit(parseInt(limit));
+        }
 
-        res.send(messages);
+        const messagesList = await messages.toArray();
+
+        if (!messagesList.length) {
+            return res.send([]);
+        }
+        res.send(messagesList);
     } catch (error) {
         res.sendStatus(500);
     }
 });
 
 
-
 app.get("/participants" , async (req, res) => {
     res.send(await getUsers());
 })
 
-setInterval(async () => {
-    const users = await getUsers();
-    const now = Date.now();
-    const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
-    if(inactiveUsers.length > 0) {
-        await db.collection("participants").deleteMany({
-            name: { $in: inactiveUsers.map((u) => u.name) }
-        });
-    }
-}, 15000);
+// setInterval(async () => {
+//     const users = await getUsers();
+//     const now = Date.now();
+//     const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
+//     if(inactiveUsers.length > 0) {
+//         await db.collection("participants").deleteMany({
+//             name: { $in: inactiveUsers.map((u) => u.name) }
+//         });
+//     }
+// }, 15000);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${process.env.PORT}`);
