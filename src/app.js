@@ -101,6 +101,8 @@ app.post("/messages" , async (req, res) => {
         if(!from || !users.find((u) => u.name === from)) {
             return res.sendStatus(422);
         }
+
+        await messageSchema.validateAsync(message);
         
         await db.collection("messages").insertOne({
             from,
@@ -134,6 +136,8 @@ app.get("/messages", async (req, res) => {
     try {
         const limit = req.query.limit;
         const user = req.headers.user;
+
+        await getMessagesSchema.validateAsync(limit);
         
         if (!user) {
             return res.sendStatus(422);
@@ -173,6 +177,7 @@ app.get("/messages", async (req, res) => {
                 to: message.to,
                 text: message.text,
                 type: message.type,
+                time: message.time,
             };
         });
 
