@@ -102,8 +102,6 @@ app.post("/messages" , async (req, res) => {
             return res.sendStatus(422);
         }
         if(!from || !users.find((u) => u.name === from)) {
-            console.log(users.find((u) => u.name === from))
-            console.log("deu ruim1");
             return res.sendStatus(422);
         }
         
@@ -191,7 +189,6 @@ app.get("/messages", async (req, res) => {
             return res.sendStatus(422);
         }
 
-
         const filter = {
             $or: [
                 { type: "message" },
@@ -201,7 +198,6 @@ app.get("/messages", async (req, res) => {
                 },
                 {
                     type: "status",
-                    to: "Todos"
                 }
             ]
         };
@@ -209,13 +205,13 @@ app.get("/messages", async (req, res) => {
         const messages = await db
             .collection("messages")
             .find(filter)
-            .sort({ time: -1 });
         if (limit) {
             messages.limit(parseInt(limit));
         }
 
         const messagesList = await messages.toArray();
         const messagesListReversed = messagesList.reverse();
+        // console.log(messagesList)
         console.log(messagesListReversed)
 
         if (!messagesList.length) {
@@ -233,16 +229,16 @@ app.get("/participants" , async (req, res) => {
     res.send(await getUsers());
 })
 
-setInterval(async () => {
-    const users = await getUsers();
-    const now = Date.now();
-    const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
-    if(inactiveUsers.length > 0) {
-        await db.collection("participants").deleteMany({
-            name: { $in: inactiveUsers.map((u) => u.name) }
-        });
-    }
-}, 15000);
+// setInterval(async () => {
+//     const users = await getUsers();
+//     const now = Date.now();
+//     const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
+//     if(inactiveUsers.length > 0) {
+//         await db.collection("participants").deleteMany({
+//             name: { $in: inactiveUsers.map((u) => u.name) }
+//         });
+//     }
+// }, 15000);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${process.env.PORT}`);
