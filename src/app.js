@@ -180,7 +180,7 @@ app.get("/messages", async (req, res) => {
         catch (error) {
             res.sendStatus(500);
         }
-        
+
     // } catch (error) {
     //     res.sendStatus(500);
     //     console.log(error);
@@ -192,27 +192,27 @@ app.get("/participants" , async (req, res) => {
     res.send(await getUsers());
 })
 
-// setInterval(async () => {
-//     const users = await getUsers();
-//     const now = Date.now();
-//     const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
-//     inactiveUsers.forEach((u) => {
-//         db.collection("messages").insertOne({
-//             from: u.name,
-//             text: "sai da sala...",
-//             to: "Todos",
-//             type: "status",
-//             time: hour,
-//         });
-//     });
+setInterval(async () => {
+    const users = await getUsers();
+    const now = Date.now();
+    const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
+    inactiveUsers.forEach((u) => {
+        db.collection("messages").insertOne({
+            from: u.name,
+            text: "sai da sala...",
+            to: "Todos",
+            type: "status",
+            time: hour,
+        });
+    });
 
 
-//     if(inactiveUsers.length > 0) {
-//         await db.collection("participants").deleteMany({
-//             name: { $in: inactiveUsers.map((u) => u.name) }
-//         });
-//     }
-// }, 15000);
+    if(inactiveUsers.length > 0) {
+        await db.collection("participants").deleteMany({
+            name: { $in: inactiveUsers.map((u) => u.name) }
+        });
+    }
+}, 15000);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${process.env.PORT}`);
