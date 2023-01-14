@@ -9,8 +9,8 @@ import 'dayjs/locale/pt-br.js';
 const now = dayjs.locale('pt-br')
 const hour = dayjs().format('HH:mm:ss');
 
-const schema = Joi.object({
-    name: Joi.string().min(1),
+const participantSchema = Joi.object({
+    name: Joi.string().required(),
 
     to: Joi.string().min(1),
     text: Joi.string().min(1),
@@ -22,6 +22,21 @@ const schema = Joi.object({
 
     
 });
+
+const messageSchema = Joi.object({
+    to: Joi.string()
+      .required(),
+    text: Joi.string()
+      .required(),
+    type: Joi.string()
+      .valid('message', 'private_message')
+      .required()
+  });
+
+  const getMessagesSchema = Joi.number().positive();
+
+
+
 
 
 dotenv.config();
@@ -42,14 +57,18 @@ async function getUsers() {
 app.post("/participants" , async (req, res) => {
     try {
         const user = req.body;
+        
+
         if(!user.name) { 
             return res.sendStatus(422);
         }
-        const users = await getUsers();
-        await schema.validateAsync({name : user.name});
+        
+        await participantSchema.validateAsync({name : user.name});
         if(user.name === "") {
             return res.sendStatus(422);
         }
+
+        const users = await getUsers();
         const userExists = users.find((u) => u.name === user.name);
         if(userExists) {
             return res.sendStatus(409);
@@ -162,7 +181,7 @@ app.post("/messages" , async (req, res) => {
 app.get("/messages", async (req, res) => {
     try {
         const limit = req.query.limit;
-        const user = req.headers.User;
+        const user = req.headers.user;
 
         if (!user) {
             return res.sendStatus(422);
@@ -174,6 +193,10 @@ app.get("/messages", async (req, res) => {
                 {
                     type: "private_message",
                     $or: [{ from: user }, { to: user }]
+                },
+                {
+                    type: "status",
+                    to: "Todos"
                 }
             ]
         };
@@ -202,16 +225,16 @@ app.get("/participants" , async (req, res) => {
     res.send(await getUsers());
 })
 
-// setInterval(async () => {
-//     const users = await getUsers();
-//     const now = Date.now();
-//     const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
-//     if(inactiveUsers.length > 0) {
-//         await db.collection("participants").deleteMany({
-//             name: { $in: inactiveUsers.map((u) => u.name) }
-//         });
-//     }
-// }, 15000);
+setInterval(async () => {
+    const users = await getUsers();
+    const now = Date.now();
+    const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
+    if(inactiveUsers.length > 0) {
+        await db.collection("participants").deleteMany({
+            name: { $in: inactiveUsers.map((u) => u.name) }
+        });
+    }
+}, 15000);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${process.env.PORT}`);
