@@ -24,9 +24,7 @@ const schema = Joi.object({
 });
 
 
-
 dotenv.config();
-console.log(process.env.PORT);
 
 const app = express();
 app.use(express.json());
@@ -103,6 +101,11 @@ app.get("/messages" , async (req, res) => {
         const limit = req.query.limit;
         const user = req.headers.user;
         const messages = await db.collection("messages").find().toArray();
+        const users = await db.collection("participants").find().toArray();
+        if(!user || !users.find((u) => u.name === user)) {
+            return res.sendStatus(422);
+        }
+                
         const filteredMessages = messages.filter((m) => {
             if(m.type === "message") {
                 return true;
