@@ -74,6 +74,7 @@ app.post("/messages" , async (req, res) => {
     try {
         const message = req.body;
         const from = req.headers.user;
+        const users = await db.collection("participants").find().toArray();
 
         if(!message.to || !message.text || !message.type) {
             return res.sendStatus(422);
@@ -81,7 +82,9 @@ app.post("/messages" , async (req, res) => {
         if(message.type !== "message" && message.type !== "private_message") {
             return res.sendStatus(422);
         }
-
+        if(!from || !users.find((u) => u.name === from)) {
+            return res.sendStatus(422);
+        }
         
         await db.collection("messages").insertOne({
             from,
