@@ -183,7 +183,7 @@ app.get("/messages", async (req, res) => {
     const messagesListReversed = messagesList.reverse();
 
 
-    const messagesListWithoutId = messagesListReversed.map((message) => {
+    const messagesListWithoutId = messagesList.map((message) => {
         return {
             to: message.to,
             text: message.text,
