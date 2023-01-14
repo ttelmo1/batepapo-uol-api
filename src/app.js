@@ -178,11 +178,25 @@ app.get("/messages", async (req, res) => {
         messages.limit(parseInt(limit));
     }
 
+
     const messagesList = await messages.toArray();
     const messagesListReversed = messagesList.reverse();
 
+
+    const messagesListWithoutId = messagesListReversed.map((message) => {
+        return {
+            to: message.to,
+            text: message.text,
+            type: message.type,
+            from: message.from,
+            time: message.time
+        };
+
+    });
+
+
     try {
-        res.send(messagesListReversed);
+        res.send(messagesListWithoutId);
     }
     catch (error) {
         res.sendStatus(500);
