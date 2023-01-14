@@ -182,10 +182,15 @@ app.get("/messages", async (req, res) => {
     try {
         const limit = req.query.limit;
         const user = req.headers.user;
-
+        
         if (!user) {
             return res.sendStatus(422);
         }
+
+        if(limit <= 0 || isNaN(parseInt(limit))) {
+            return res.sendStatus(422);
+        }
+
 
         const filter = {
             $or: [
@@ -210,13 +215,16 @@ app.get("/messages", async (req, res) => {
         }
 
         const messagesList = await messages.toArray();
+        const messagesListReversed = messagesList.reverse();
+        console.log(messagesListReversed)
 
         if (!messagesList.length) {
             return res.send([]);
         }
-        res.send(messagesList);
+        res.send(messagesListReversed);
     } catch (error) {
         res.sendStatus(500);
+        console.log(error);
     }
 });
 
