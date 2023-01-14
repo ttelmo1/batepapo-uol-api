@@ -174,10 +174,9 @@ app.get("/messages", async (req, res) => {
     const messages = db
         .collection("messages")
         .find(filter)
-    // if (limit) {
-    //     messages.limit(parseInt(limit));
-    //     console.log(messages.limit(parseInt(limit)))
-    // }
+    if (limit) {
+        messages.limit(parseInt(limit));
+    }
 
 
     const messagesList = await messages.toArray();
