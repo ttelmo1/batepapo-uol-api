@@ -99,7 +99,7 @@ app.post("/messages" , async (req, res) => {
 app.get("/messages" , async (req, res) => {
     try {
         const limit = req.query.limit;
-        const user = req.headers.user;
+        const user = req.headers
         const messages = await db.collection("messages").find().toArray();
         const users = await db.collection("participants").find().toArray();
         if(!user || !users.find((u) => u.name === user)) {
