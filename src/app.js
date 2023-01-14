@@ -96,32 +96,64 @@ app.post("/messages" , async (req, res) => {
     }
 });
 
-app.get("/messages" , async (req, res) => {
+// app.get("/messages" , async (req, res) => {
+//     try {
+//         const limit = req.query.limit;
+//         const user = req.headers
+//         const messages = await db.collection("messages").find().toArray();
+//         const users = await db.collection("participants").find().toArray();
+//         if(!user || !users.find((u) => u.name === user)) {
+//             return res.sendStatus(422);
+//         }
+                
+//         const filteredMessages = messages.filter((m) => {
+//             if(m.type === "message") {
+//                 return true;
+//             }
+//             if(m.type === "private_message" && (m.from === user || m.to === user)) {
+//                 return true;
+//             }
+//             return false;
+//         });
+//         const sortedMessages = filteredMessages.sort((a, b) => a.time - b.time);
+//         const limitedMessages = sortedMessages.slice(0, limit);
+//         res.send(limitedMessages);
+//     } catch (error) {
+//         res.sendStatus(500);
+//     }
+// });
+
+app.get("/messages", async (req, res) => {
     try {
-        const limit = req.query.limit;
-        const user = req.headers
-        const messages = await db.collection("messages").find().toArray();
+        const limit = req.query.limit || 100;
+        const user = req.headers.User;
         const users = await db.collection("participants").find().toArray();
-        if(!user || !users.find((u) => u.name === user)) {
+        if (!user || !users.find((u) => u.name === user)) {
             return res.sendStatus(422);
         }
-                
-        const filteredMessages = messages.filter((m) => {
-            if(m.type === "message") {
-                return true;
-            }
-            if(m.type === "private_message" && (m.from === user || m.to === user)) {
-                return true;
-            }
-            return false;
-        });
-        const sortedMessages = filteredMessages.sort((a, b) => a.time - b.time);
-        const limitedMessages = sortedMessages.slice(0, limit);
-        res.send(limitedMessages);
+
+        const messages = await db
+            .collection("messages")
+            .find({
+                $or: [
+                    { type: "message" },
+                    {
+                        type: "private_message",
+                        $or: [{ from: user }, { to: user }]
+                    }
+                ]
+            })
+            .sort({ time: -1 })
+            .skip(0)
+            .limit(limit)
+            .toArray();
+
+        res.send(messages);
     } catch (error) {
         res.sendStatus(500);
     }
 });
+
 
 
 app.get("/participants" , async (req, res) => {
