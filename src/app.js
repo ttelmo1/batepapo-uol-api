@@ -151,10 +151,11 @@ app.get("/messages", async (req, res) => {
         return res.sendStatus(422);
     }
 
-
-    const { value: validLimit, error } = getMessagesSchema.validate(limit);
-
-    if (error) return res.status(422).send(error.message);
+    try {
+        await getMessagesSchema.validateAsync(limit);
+    } catch (error) {
+        return res.sendStatus(422);
+    }
 
 
     const filter = {
@@ -182,7 +183,7 @@ app.get("/messages", async (req, res) => {
     const messagesListReversed = messagesList.reverse();
 
 
-    const messagesListWithoutId = messagesList.map((message) => {
+    const messagesListWithoutId = messagesListReversed.map((message) => {
         return {
             to: message.to,
             text: message.text,
@@ -194,10 +195,12 @@ app.get("/messages", async (req, res) => {
     });
 
 
-    if (validLimit) {
-        return res.send(messagesListWithoutId.slice(-validLimit).reverse());
-      }
-
+    try {
+        res.send(messagesListWithoutId);
+    }
+    catch (error) {
+        res.sendStatus(500);
+    }
 });
 
 
