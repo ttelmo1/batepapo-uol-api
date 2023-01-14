@@ -101,8 +101,6 @@ app.post("/messages" , async (req, res) => {
         if(!from || !users.find((u) => u.name === from)) {
             return res.sendStatus(422);
         }
-
-        await messageSchema.validateAsync(message);
         
         await db.collection("messages").insertOne({
             from,
@@ -133,19 +131,25 @@ app.post("/status" , async (req, res) => {
 
 
 app.get("/messages", async (req, res) => {
-    try {
-        const limit = req.query.limit;
+    // try {
+        const { limit } = req.query
+        console.log(limit)
         const user = req.headers.user;
-
-        await getMessagesSchema.validateAsync(limit);
         
         if (!user) {
             return res.sendStatus(422);
         }
 
-        if(limit <= 0 || isNaN(parseInt(limit))) {
+        // if(limit <= 0 || isNaN(parseInt(limit))) {
+        //     return res.sendStatus(422);
+        // }
+
+        try{
+            await getMessagesSchema.validateAsync(limit);
+        } catch (error) {
             return res.sendStatus(422);
         }
+
 
         const filter = {
             $or: [
@@ -160,8 +164,6 @@ app.get("/messages", async (req, res) => {
             ]
         };
 
-    
-
         const messages = db
             .collection("messages")
             .find(filter)
@@ -171,26 +173,18 @@ app.get("/messages", async (req, res) => {
 
         const messagesList = await messages.toArray();
         const messagesListReversed = messagesList.reverse();
-        const messagesListWithoutId = messagesListReversed.map((message) => {
-            return {
-                from: message.from,
-                to: message.to,
-                text: message.text,
-                type: message.type,
-                time: message.time,
-            };
-        });
-
-
-
-        if (!messagesList.length) {
-            return res.sendStatus(422);
+        
+        try{
+            res.send(messagesListReversed);
         }
-        res.send(messagesListWithoutId);
-    } catch (error) {
-        res.sendStatus(500);
-        console.log(error);
-    }
+        catch (error) {
+            res.sendStatus(500);
+        }
+        
+    // } catch (error) {
+    //     res.sendStatus(500);
+    //     console.log(error);
+    // }
 });
 
 
@@ -198,27 +192,27 @@ app.get("/participants" , async (req, res) => {
     res.send(await getUsers());
 })
 
-setInterval(async () => {
-    const users = await getUsers();
-    const now = Date.now();
-    const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
-    inactiveUsers.forEach((u) => {
-        db.collection("messages").insertOne({
-            from: u.name,
-            text: "sai da sala...",
-            to: "Todos",
-            type: "status",
-            time: hour,
-        });
-    });
+// setInterval(async () => {
+//     const users = await getUsers();
+//     const now = Date.now();
+//     const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
+//     inactiveUsers.forEach((u) => {
+//         db.collection("messages").insertOne({
+//             from: u.name,
+//             text: "sai da sala...",
+//             to: "Todos",
+//             type: "status",
+//             time: hour,
+//         });
+//     });
 
 
-    if(inactiveUsers.length > 0) {
-        await db.collection("participants").deleteMany({
-            name: { $in: inactiveUsers.map((u) => u.name) }
-        });
-    }
-}, 15000);
+//     if(inactiveUsers.length > 0) {
+//         await db.collection("participants").deleteMany({
+//             name: { $in: inactiveUsers.map((u) => u.name) }
+//         });
+//     }
+// }, 15000);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${process.env.PORT}`);
