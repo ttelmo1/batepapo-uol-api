@@ -36,9 +36,6 @@ const messageSchema = Joi.object({
   const getMessagesSchema = Joi.number().positive();
 
 
-
-
-
 dotenv.config();
 
 const app = express();
@@ -161,7 +158,7 @@ app.get("/messages", async (req, res) => {
 
     
 
-        const messages = await db
+        const messages = db
             .collection("messages")
             .find(filter)
         if (limit) {
@@ -170,11 +167,21 @@ app.get("/messages", async (req, res) => {
 
         const messagesList = await messages.toArray();
         const messagesListReversed = messagesList.reverse();
+        const messagesListWithoutId = messagesListReversed.map((message) => {
+            return {
+                from: message.from,
+                to: message.to,
+                text: message.text,
+                type: message.type,
+            };
+        });
+
+
 
         if (!messagesList.length) {
-            return res.send([]);
+            return res.sendStatus(422);
         }
-        res.send(messagesListReversed);
+        res.send(messagesListWithoutId);
     } catch (error) {
         res.sendStatus(500);
         console.log(error);
