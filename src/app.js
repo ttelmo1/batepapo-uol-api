@@ -107,10 +107,10 @@ app.post("/messages" , async (req, res) => {
         
         await db.collection("messages").insertOne({
             from,
-            to: message.to,
             text: message.text,
-            type: message.type,
+            to: message.to,
             time: hour,
+            type: message.type
         });
         res.sendStatus(201);
     } catch (error) {
@@ -118,63 +118,20 @@ app.post("/messages" , async (req, res) => {
     }
 });
 
-// app.get("/messages" , async (req, res) => {
-//     try {
-//         const limit = req.query.limit;
-//         const user = req.headers
-//         const messages = await db.collection("messages").find().toArray();
-//         const users = await db.collection("participants").find().toArray();
-//         if(!user || !users.find((u) => u.name === user)) {
-//             return res.sendStatus(422);
-//         }
-                
-//         const filteredMessages = messages.filter((m) => {
-//             if(m.type === "message") {
-//                 return true;
-//             }
-//             if(m.type === "private_message" && (m.from === user || m.to === user)) {
-//                 return true;
-//             }
-//             return false;
-//         });
-//         const sortedMessages = filteredMessages.sort((a, b) => a.time - b.time);
-//         const limitedMessages = sortedMessages.slice(0, limit);
-//         res.send(limitedMessages);
-//     } catch (error) {
-//         res.sendStatus(500);
-//     }
-// });
+app.post("/status" , async (req, res) => {
+    try {
+        const user = req.headers.user;
+        const userRegistered = await db.collection("participants").findOne({ name: user});
+        if(!userRegistered) {
+            return res.sendStatus(404);
+        }
+        await db.collection("participants").updateOne({ name: user }, { $set: { lastStatus: Date.now() } });
+        res.sendStatus(200);
+    } catch (error) {
+        res.sendStatus(500);
+    }
+});
 
-// app.get("/messages", async (req, res) => {
-//     try {
-//         const limit = req.query.limit || 100;
-//         const user = req.headers.User;
-//         const users = await db.collection("participants").find().toArray();
-//         if (!user || !users.find((u) => u.name === user)) {
-//             return res.sendStatus(422);
-//         }
-
-//         const messages = await db
-//             .collection("messages")
-//             .find({
-//                 $or: [
-//                     { type: "message" },
-//                     {
-//                         type: "private_message",
-//                         $or: [{ from: user }, { to: user }]
-//                     }
-//                 ]
-//             })
-//             .sort({ time: -1 })
-//             .skip(0)
-//             .limit(limit)
-//             .toArray();
-
-//         res.send(messages).statusCode(200);
-//     } catch (error) {
-//         res.sendStatus(500);
-//     }
-// });
 
 app.get("/messages", async (req, res) => {
     try {
@@ -202,6 +159,8 @@ app.get("/messages", async (req, res) => {
             ]
         };
 
+    
+
         const messages = await db
             .collection("messages")
             .find(filter)
@@ -211,8 +170,6 @@ app.get("/messages", async (req, res) => {
 
         const messagesList = await messages.toArray();
         const messagesListReversed = messagesList.reverse();
-        // console.log(messagesList)
-        console.log(messagesListReversed)
 
         if (!messagesList.length) {
             return res.send([]);
@@ -229,16 +186,27 @@ app.get("/participants" , async (req, res) => {
     res.send(await getUsers());
 })
 
-// setInterval(async () => {
-//     const users = await getUsers();
-//     const now = Date.now();
-//     const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
-//     if(inactiveUsers.length > 0) {
-//         await db.collection("participants").deleteMany({
-//             name: { $in: inactiveUsers.map((u) => u.name) }
-//         });
-//     }
-// }, 15000);
+setInterval(async () => {
+    const users = await getUsers();
+    const now = Date.now();
+    const inactiveUsers = users.filter((u) => now - u.lastStatus > 10000);
+    inactiveUsers.forEach((u) => {
+        db.collection("messages").insertOne({
+            from: u.name,
+            text: "sai da sala...",
+            to: "Todos",
+            type: "status",
+            time: hour,
+        });
+    });
+
+
+    if(inactiveUsers.length > 0) {
+        await db.collection("participants").deleteMany({
+            name: { $in: inactiveUsers.map((u) => u.name) }
+        });
+    }
+}, 15000);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${process.env.PORT}`);
