@@ -178,7 +178,7 @@ app.get("/messages", async (req, res) => {
 
 
     try {
-        res.send(messagesListWithoutId);
+        res.send(messagesListReversed);
     }
     catch (error) {
         res.sendStatus(500);
