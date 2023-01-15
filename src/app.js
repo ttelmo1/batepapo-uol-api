@@ -136,7 +136,6 @@ app.post("/status", async (req, res) => {
 
 app.get("/messages", async (req, res) => {
     const { limit } = req.query
-    console.log(limit)
     const user = req.headers.user;
 
     if (!user) {
@@ -148,7 +147,6 @@ app.get("/messages", async (req, res) => {
     } catch (error) {
         return res.sendStatus(422);
     }
-
 
     const filter = {
         $or: [
@@ -174,8 +172,6 @@ app.get("/messages", async (req, res) => {
     if (limit) {
         res.send(messagesListReversed.slice(0, limit));
     }
-
-
 
     try {
         res.send(messagesList);
@@ -210,10 +206,10 @@ app.delete("/messages/:id", async (req, res) => {
 
 app.put("/messages/:id", async (req, res) => {
     const id = req.params.id;
+    const user = req.headers.user;
   
     try{
         const message = await db.collection("messages").findOne({ _id: new ObjectId(id) });
-        
         if (!message) {
             return res.sendStatus(404);
         }
@@ -221,12 +217,11 @@ app.put("/messages/:id", async (req, res) => {
             return res.sendStatus(401);
         }
         await db.collection("messages").updateOne({ _id: message._id }, { $set: req.body });
-        console.log(req.body)
-        console.log(message)
         return res.send(message);
     }
     catch (error) {
         res.sendStatus(500);
+
     }
 });
    
