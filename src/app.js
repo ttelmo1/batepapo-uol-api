@@ -199,7 +199,24 @@ app.get("/messages", async (req, res) => {
 
 app.get("/participants", async (req, res) => {
     res.send(await getUsers());
-})
+});
+
+app.delete("/messages/_id", async (req, res) => {
+    const user = req.headers.user;
+    const { id } = req.params;
+    const message = await db.collection("messages").findOne({ _id: ObjectId(id) });
+    if (!message) {
+        return res.sendStatus(404);
+    }
+    if (message.from !== user) {
+        return res.sendStatus(401);
+    }
+    await db.collection("messages").deleteOne({ _id: ObjectId(id) });
+    res.sendStatus(200);
+});
+
+    
+
 
 setInterval(async () => {
     const users = await getUsers();
