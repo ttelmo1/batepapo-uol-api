@@ -201,7 +201,7 @@ app.get("/participants", async (req, res) => {
     res.send(await getUsers());
 });
 
-app.delete("/messages/_id", async (req, res) => {
+app.delete("/messages/:id", async (req, res) => {
     const user = req.headers.user;
     const { id } = req.params;
     const message = await db.collection("messages").findOne({ _id: ObjectId(id) });
