@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import Joi from 'joi';
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br.js';
@@ -212,15 +212,18 @@ app.put("/messages/:id", async (req, res) => {
     const id = req.params.id;
   
     try{
-        const message = await db.collection("messages").findOne({ _id: ObjectId(id) });
+        const message = await db.collection("messages").findOne({ _id: new ObjectId(id) });
+        
         if (!message) {
             return res.sendStatus(404);
         }
         if (message.from !== user) {
             return res.sendStatus(401);
         }
-        await db.collection("messages").updateOne({ _id: ObjectId(id) }, { $set: { text: req.body.text } });
-        res.sendStatus(200);
+        await db.collection("messages").updateOne({ _id: message._id }, { $set: req.body });
+        console.log(req.body)
+        console.log(message)
+        return res.send(message);
     }
     catch (error) {
         res.sendStatus(500);
