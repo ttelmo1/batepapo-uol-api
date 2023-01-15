@@ -178,7 +178,7 @@ app.get("/messages", async (req, res) => {
 
 
     try {
-        res.send(messagesListReversed);
+        res.send(messagesList);
     }
     catch (error) {
         res.sendStatus(500);
@@ -193,6 +193,7 @@ app.get("/participants", async (req, res) => {
 app.delete("/messages/:id", async (req, res) => {
     const user = req.headers.user;
     const { id } = req.params;
+    try{
     const message = await db.collection("messages").findOne({ _id: ObjectId(id) });
     if (!message) {
         return res.sendStatus(404);
@@ -202,6 +203,9 @@ app.delete("/messages/:id", async (req, res) => {
     }
     await db.collection("messages").deleteOne({ _id: ObjectId(id) });
     res.sendStatus(200);
+    } catch (error) {
+        res.sendStatus(500);
+    }
 });
 
     
